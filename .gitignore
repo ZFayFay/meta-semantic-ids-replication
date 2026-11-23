@@ -1,0 +1,4 @@
+ratings.parquet
+clip_text.npy
+__pycache__/
+*.log
