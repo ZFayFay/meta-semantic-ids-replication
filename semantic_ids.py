@@ -292,6 +292,18 @@ RES["seeds"] = dict(table=rob.round(5).to_dict(orient="index"), diffs={k: [float
 print({k: np.round(v, 4).tolist() for k, v in diffs.items()})
 
 # %% [markdown]
+# ## Sensitivity: twice the training
+# Four epochs is my choice. If semantic IDs simply need longer to train (many embeddings are shared and updated less often),
+# doubling the epochs should close the gap. Same seed, 8 epochs.
+
+# %%
+ep8 = {}
+for kind, args in [("id", ()), ("content", ()), ("sid", SIDS[BEST_TOK])]:
+    p8 = train_eval(kind, *args, epochs=8)
+    ep8[kind] = dict(warm=float(auc(WTEST, p8["warm"])), cold=float(auc(CTEST, p8["cold"])))
+RES["epochs8"] = ep8; print(ep8)
+
+# %% [markdown]
 # ## Figures
 
 # %%
@@ -325,3 +337,33 @@ def clean(o):
     if isinstance(o, np.bool_): return bool(o)
     return o
 json.dump(clean(RES), open("figures/results.json", "w"), indent=1)
+
+# %% [markdown]
+# ## Scorecard
+
+# %%
+
+def scorecard(rows, title, path):
+    """rows: (id, claim, test, result, verdict). Verdict colors: Pass green, Fail red, other amber."""
+    colors = {"Pass": "#2f855a", "Fail": "#c53030"}
+    fig, ax = plt.subplots(figsize=(10, 0.48 * len(rows) + 1.0)); ax.axis("off")
+    heads = ["", "Claim", "Pre-registered test", "Result", "Verdict"]
+    xs = [0.0, 0.05, 0.40, 0.70, 0.93]
+    y = 1.0; step = 1.0 / (len(rows) + 1.3)
+    for x, h in zip(xs, heads): ax.text(x, y, h, fontsize=9, fontweight="bold", va="top", transform=ax.transAxes)
+    for r in rows:
+        y -= step
+        ax.plot([0, 1], [y + step * 0.25] * 2, color="#e2e8f0", lw=0.8, transform=ax.transAxes)
+        for x, t in zip(xs[:4], r[:4]): ax.text(x, y, t, fontsize=8.5, va="top", transform=ax.transAxes, wrap=True)
+        ax.text(xs[4], y, r[4], fontsize=9, fontweight="bold", va="top", color=colors.get(r[4].split()[0], "#b7791f"), transform=ax.transAxes)
+    ax.set_title(title, fontsize=10, loc="left")
+    fig.tight_layout(); fig.savefig(path, dpi=200, bbox_inches="tight")
+
+A2 = AUC
+scorecard([
+    ("H1", "Semantic IDs help new items", "Beat the CLIP vector on new movies", f"{A2.loc[PRIMARY,'cold']:.3f} vs {A2.loc['content','cold']:.3f} AUC", "Fail"),
+    ("H2", "Semantic IDs keep accuracy on known items", "Within 0.005 AUC of item IDs", f"{A2.loc[PRIMARY,'warm']:.3f} vs {A2.loc['id','warm']:.3f}", "Fail"),
+    ("H3", "Engagement-aligned tokens are better", "Beat content-only tokens on new movies", f"{RES['H3']['aligned_minus_content_K32']:+.3f} AUC", "Fail"),
+    ("H4", "Codebook quality predicts accuracy", "Spearman |rho| >= 0.6, p < 0.05", f"Purity rho = {RES['H4']['purity']['rho']:.2f}", "Pass (fragile)"),
+    ("H5", "Token sharing costs head items", "ID + SID beats SID on top 10% movies", f"{RES['H5']['idsid_minus_sid_head']:+.3f} AUC", "Fail"),
+], "Meta's semantic IDs on MovieLens: pre-registered tests and results", "figures/fig0_scorecard.png")

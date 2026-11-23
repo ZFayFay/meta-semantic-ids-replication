@@ -16,7 +16,7 @@ The hypotheses and pass/fail rules were committed before any model was trained. 
 | H4 | A codebook quality metric correlates with new-movie AUC (abs rho >= 0.6) | Purity rho 0.69 (p = 0.014); 0.52 and 0.46 in two earlier runs | Pass, fragile |
 | H5 | ID + semantic ID beats semantic ID on the most popular movies | -0.003 | Fail |
 
-Exploratory: random codes score 0.713 on new movies, so the semantic codes carry signal. Using only the first code level for new movies scores 0.748, better than all three levels (0.741). Across five seeds, the semantic ID model's new-movie AUC has a standard deviation of 0.012, against 0.001 for the CLIP vector.
+Exploratory: random codes score 0.713 on new movies, so the semantic codes carry signal. Using only the first code level for new movies scores 0.748, better than all three levels (0.741). Across five more seeds, semantic IDs lose to the CLIP vector on new movies every time (by 0.006 to 0.035), and their new-movie AUC has a standard deviation of 0.012, against 0.001 for the CLIP vector. Training for 8 epochs instead of 4 makes every model worse and leaves the order unchanged.
 
 ![AUC](figures/fig1_auc.png)
 ![Purity](figures/fig2_purity_vs_auc.png)
@@ -27,7 +27,7 @@ MovieLens is small and the model is a factorization model, not a large sequence 
 
 ## Files
 
-- `meta_semantic_ids_replication.ipynb`: the full analysis, executed (about 20 minutes on 2 CPU cores).
+- `meta_semantic_ids_replication.ipynb`: the full analysis, executed (about 40 minutes on 2 CPU cores).
 - `semantic_ids.py`: the same code as a script (percent format).
 - `figures/results.json`: every number quoted above.
 
